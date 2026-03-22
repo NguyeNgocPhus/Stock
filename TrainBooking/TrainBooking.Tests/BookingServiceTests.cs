@@ -32,7 +32,7 @@ public class BookingServiceTests
     public async Task CreateBooking_ValidRequest_ReturnsBookingResponse()
     {
         using var ctx = CreateContext();
-        var service = new BookingService(ctx, Microsoft.Extensions.Logging.Abstractions.NullLogger<TrainBooking.Api.Services.BookingService>.Instance, CreateMetrics());
+        var service = new BookingService(ctx, CreateMetrics());
         var train = ctx.Trains.First();
         var seat = ctx.Seats.First(s => s.TrainId == train.Id);
 
@@ -52,7 +52,7 @@ public class BookingServiceTests
     public async Task CreateBooking_SeatAlreadyBooked_ThrowsInvalidOperation()
     {
         using var ctx = CreateContext();
-        var service = new BookingService(ctx, Microsoft.Extensions.Logging.Abstractions.NullLogger<TrainBooking.Api.Services.BookingService>.Instance, CreateMetrics());
+        var service = new BookingService(ctx, CreateMetrics());
         var train = ctx.Trains.First();
         var seat = ctx.Seats.First(s => s.TrainId == train.Id);
 
@@ -74,7 +74,7 @@ public class BookingServiceTests
     public async Task CreateBooking_SeatBelongsToDifferentTrain_ThrowsInvalidOperation()
     {
         using var ctx = CreateContext();
-        var service = new BookingService(ctx, Microsoft.Extensions.Logging.Abstractions.NullLogger<TrainBooking.Api.Services.BookingService>.Instance, CreateMetrics());
+        var service = new BookingService(ctx, CreateMetrics());
         var train1 = ctx.Trains.OrderBy(t => t.Id).First();
         var train2 = ctx.Trains.OrderBy(t => t.Id).Skip(1).First();
         var seatFromTrain2 = ctx.Seats.First(s => s.TrainId == train2.Id);
@@ -91,7 +91,7 @@ public class BookingServiceTests
     public async Task CreateBooking_TrainNotFound_ThrowsKeyNotFound()
     {
         using var ctx = CreateContext();
-        var service = new BookingService(ctx, Microsoft.Extensions.Logging.Abstractions.NullLogger<TrainBooking.Api.Services.BookingService>.Instance, CreateMetrics());
+        var service = new BookingService(ctx, CreateMetrics());
 
         await Assert.ThrowsAsync<KeyNotFoundException>(() =>
             service.CreateBookingAsync(new BookingRequest
@@ -105,7 +105,7 @@ public class BookingServiceTests
     public async Task GetBookingByReference_Exists_ReturnsBooking()
     {
         using var ctx = CreateContext();
-        var service = new BookingService(ctx, Microsoft.Extensions.Logging.Abstractions.NullLogger<TrainBooking.Api.Services.BookingService>.Instance, CreateMetrics());
+        var service = new BookingService(ctx, CreateMetrics());
         var train = ctx.Trains.First();
         var seat = ctx.Seats.First(s => s.TrainId == train.Id);
 
@@ -125,7 +125,7 @@ public class BookingServiceTests
     public async Task GetBookingByReference_NotFound_ReturnsNull()
     {
         using var ctx = CreateContext();
-        var service = new BookingService(ctx, Microsoft.Extensions.Logging.Abstractions.NullLogger<TrainBooking.Api.Services.BookingService>.Instance, CreateMetrics());
+        var service = new BookingService(ctx, CreateMetrics());
 
         var result = await service.GetBookingByReferenceAsync("TRN-XXXXXX");
 

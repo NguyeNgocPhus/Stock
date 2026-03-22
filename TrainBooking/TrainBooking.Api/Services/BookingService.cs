@@ -1,6 +1,7 @@
 using System.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Serilog;
 using TrainBooking.Api.Data;
 using TrainBooking.Api.DTOs;
 using TrainBooking.Api.Metrics;
@@ -11,20 +12,18 @@ namespace TrainBooking.Api.Services;
 public class BookingService : IBookingService
 {
     private readonly AppDbContext _db;
-    private readonly ILogger<BookingService> _logger;
     private readonly IBookingMetrics _metrics;
     private static readonly char[] Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".ToCharArray();
 
-    public BookingService(AppDbContext db, ILogger<BookingService> logger, IBookingMetrics metrics)
+    public BookingService(AppDbContext db, IBookingMetrics metrics)
     {
         _db = db;
-        _logger = logger;
         _metrics = metrics;
     }
 
     public async Task<BookingResponse> CreateBookingAsync(BookingRequest request)
     {
-        _logger.LogInformation("Creating booking for train {TrainId}, seat {SeatId}, passenger {PassengerName}",
+        Log.Information("Creating booking for train {TrainId}, seat {SeatId}, passenger {PassengerName}",
             request.TrainId, request.SeatId, request.PassengerName);
 
         var train = await _db.Trains.FindAsync(request.TrainId)
@@ -63,7 +62,7 @@ public class BookingService : IBookingService
         if (transaction is not null)
             await transaction.CommitAsync();
 
-        _logger.LogInformation("Booking {BookingReference} created for passenger {PassengerName}",
+        Log.Information("Booking {BookingReference} created for passenger {PassengerName}",
             reference, request.PassengerName);
 
         _metrics.RecordBookingCreated(request.TrainId.ToString());
@@ -74,7 +73,7 @@ public class BookingService : IBookingService
 
     public async Task<BookingResponse?> GetBookingByReferenceAsync(string reference)
     {
-        _logger.LogInformation("Looking up booking {BookingReference}", reference);
+        Log.Information("Looking up booking {BookingReference}", reference);
 
         var booking = await _db.Bookings
             .Include(b => b.Train)
@@ -83,7 +82,7 @@ public class BookingService : IBookingService
 
         if (booking is null)
         {
-            _logger.LogWarning("Booking {BookingReference} not found", reference);
+            Log.Warning("Booking {BookingReference} not found", reference);
             return null;
         }
 
@@ -102,7 +101,7 @@ public class BookingService : IBookingService
             if (!await _db.Bookings.AnyAsync(b => b.BookingReference == candidate))
                 return candidate;
 
-            _logger.LogWarning("Booking reference collision on attempt {Attempt}: {Candidate}", attempt + 1, candidate);
+            Log.Warning("Booking reference collision on attempt {Attempt}: {Candidate}", attempt + 1, candidate);
         }
         throw new InvalidOperationException("Failed to generate a unique booking reference after 5 attempts.");
     }
