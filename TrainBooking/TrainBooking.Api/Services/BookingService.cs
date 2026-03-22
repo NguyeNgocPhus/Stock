@@ -10,12 +10,20 @@ namespace TrainBooking.Api.Services;
 public class BookingService : IBookingService
 {
     private readonly AppDbContext _db;
+    private readonly ILogger<BookingService> _logger;
     private static readonly char[] Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".ToCharArray();
 
-    public BookingService(AppDbContext db) => _db = db;
+    public BookingService(AppDbContext db, ILogger<BookingService> logger)
+    {
+        _db = db;
+        _logger = logger;
+    }
 
     public async Task<BookingResponse> CreateBookingAsync(BookingRequest request)
     {
+        _logger.LogInformation("Creating booking for train {TrainId}, seat {SeatId}, passenger {PassengerName}",
+            request.TrainId, request.SeatId, request.PassengerName);
+
         var train = await _db.Trains.FindAsync(request.TrainId)
             ?? throw new KeyNotFoundException($"Train {request.TrainId} not found.");
 
@@ -25,16 +33,11 @@ public class BookingService : IBookingService
         if (seat.TrainId != request.TrainId)
             throw new InvalidOperationException("Seat does not belong to the specified train.");
 
-        // Use serializable transaction for relational providers (PostgreSQL) to prevent concurrent
-        // double-bookings. The InMemory provider does not support relational transactions;
-        // the IsBooked check below still catches sequential double-bookings in tests.
         IDbContextTransaction? transaction = _db.Database.IsRelational()
             ? await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable)
             : null;
         await using var __ = transaction;
 
-        // Force a fresh SELECT from the database to bypass EF's identity cache.
-        // Without this reload, FindAsync returns the cached entity and misses concurrent updates.
         await _db.Entry(seat).ReloadAsync();
         if (seat.IsBooked)
             throw new InvalidOperationException("Seat is already booked.");
@@ -57,17 +60,26 @@ public class BookingService : IBookingService
         if (transaction is not null)
             await transaction.CommitAsync();
 
+        _logger.LogInformation("Booking {BookingReference} created for passenger {PassengerName}",
+            reference, request.PassengerName);
+
         return MapToResponse(booking, train.Name, seat);
     }
 
     public async Task<BookingResponse?> GetBookingByReferenceAsync(string reference)
     {
+        _logger.LogInformation("Looking up booking {BookingReference}", reference);
+
         var booking = await _db.Bookings
             .Include(b => b.Train)
             .Include(b => b.Seat)
             .FirstOrDefaultAsync(b => b.BookingReference == reference);
 
-        if (booking is null) return null;
+        if (booking is null)
+        {
+            _logger.LogWarning("Booking {BookingReference} not found", reference);
+            return null;
+        }
 
         return MapToResponse(booking, booking.Train.Name, booking.Seat);
     }
@@ -83,6 +95,8 @@ public class BookingService : IBookingService
 
             if (!await _db.Bookings.AnyAsync(b => b.BookingReference == candidate))
                 return candidate;
+
+            _logger.LogWarning("Booking reference collision on attempt {Attempt}: {Candidate}", attempt + 1, candidate);
         }
         throw new InvalidOperationException("Failed to generate a unique booking reference after 5 attempts.");
     }

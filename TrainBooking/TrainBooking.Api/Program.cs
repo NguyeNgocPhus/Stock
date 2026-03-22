@@ -1,8 +1,14 @@
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 using TrainBooking.Api.Data;
+using TrainBooking.Api.Logging;
 using TrainBooking.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog((ctx, config) => config
+    .Enrich.With<ActivityEnricher>()
+    .WriteTo.Console(outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss} [{TraceId}] {Message:lj}{NewLine}{Exception}"));
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
@@ -13,6 +19,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<IBookingService, BookingService>();
 
 var app = builder.Build();
+
+app.UseSerilogRequestLogging();
 
 if (app.Environment.IsDevelopment())
 {
