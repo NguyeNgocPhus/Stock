@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using OpenTelemetry.Metrics;
 using Serilog;
 using TrainBooking.Api.Data;
 using TrainBooking.Api.Logging;
+using TrainBooking.Api.Metrics;
 using TrainBooking.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,6 +20,16 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<IBookingService, BookingService>();
 
+builder.Services.AddSingleton<BookingMetrics>();
+
+builder.Services.AddOpenTelemetry()
+    .WithMetrics(metrics => metrics
+        .AddAspNetCoreInstrumentation()
+        .AddRuntimeInstrumentation()
+        .AddMeter("Microsoft.EntityFrameworkCore")
+        .AddMeter("TrainBooking")
+        .AddPrometheusExporter());
+
 var app = builder.Build();
 
 app.UseSerilogRequestLogging();
@@ -29,6 +41,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.MapControllers();
+app.MapPrometheusScrapingEndpoint();
 
 // Apply migrations on startup (relational DB only)
 using (var scope = app.Services.CreateScope())
