@@ -2,7 +2,7 @@ using System.Diagnostics.Metrics;
 
 namespace TrainBooking.Api.Metrics;
 
-public sealed class BookingMetrics
+public sealed class BookingMetrics : IBookingMetrics
 {
     private readonly Counter<int> _bookingsCreated;
     private readonly Counter<int> _seatsBooked;
@@ -21,6 +21,6 @@ public sealed class BookingMetrics
     public void RecordBookingCreated(string trainId) =>
         _bookingsCreated.Add(1, new KeyValuePair<string, object?>("train.id", trainId));
 
-    public void RecordSeatsBooked(int count, string trainId) =>
-        _seatsBooked.Add(count, new KeyValuePair<string, object?>("train.id", trainId));
+    public void RecordSeatBooked(string trainId) =>
+        _seatsBooked.Add(1, new KeyValuePair<string, object?>("train.id", trainId));
 }

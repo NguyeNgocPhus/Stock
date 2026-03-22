@@ -12,10 +12,10 @@ public class BookingService : IBookingService
 {
     private readonly AppDbContext _db;
     private readonly ILogger<BookingService> _logger;
-    private readonly BookingMetrics _metrics;
+    private readonly IBookingMetrics _metrics;
     private static readonly char[] Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".ToCharArray();
 
-    public BookingService(AppDbContext db, ILogger<BookingService> logger, BookingMetrics metrics)
+    public BookingService(AppDbContext db, ILogger<BookingService> logger, IBookingMetrics metrics)
     {
         _db = db;
         _logger = logger;
@@ -67,7 +67,7 @@ public class BookingService : IBookingService
             reference, request.PassengerName);
 
         _metrics.RecordBookingCreated(request.TrainId.ToString());
-        _metrics.RecordSeatsBooked(1, request.TrainId.ToString());
+        _metrics.RecordSeatBooked(request.TrainId.ToString());
 
         return MapToResponse(booking, train.Name, seat);
     }

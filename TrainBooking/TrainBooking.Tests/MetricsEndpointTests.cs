@@ -3,23 +3,28 @@ using TrainBooking.Tests.Infrastructure;
 
 namespace TrainBooking.Tests;
 
-public class MetricsEndpointTests(CustomWebApplicationFactory factory)
-    : IClassFixture<CustomWebApplicationFactory>
+public class MetricsEndpointTests : IClassFixture<CustomWebApplicationFactory>
 {
-    [Fact]
-    public async Task GetMetrics_ReturnsOk()
+    private readonly HttpClient _client;
+
+    public MetricsEndpointTests(CustomWebApplicationFactory factory)
     {
-        var client = factory.CreateClient();
-        var response = await client.GetAsync("/metrics");
+        _client = factory.CreateClient();
+    }
+
+    [Fact]
+    public async Task GetMetrics_WhenEndpointMapped_ReturnsOk()
+    {
+        var response = await _client.GetAsync("/metrics");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]
-    public async Task GetMetrics_ReturnsPrometheusContentType()
+    public async Task GetMetrics_WhenEndpointMapped_ReturnsPrometheusContentType()
     {
-        var client = factory.CreateClient();
-        var response = await client.GetAsync("/metrics");
+        var response = await _client.GetAsync("/metrics");
         var contentType = response.Content.Headers.ContentType?.MediaType;
-        Assert.StartsWith("text/plain", contentType ?? string.Empty);
+        Assert.NotNull(contentType);
+        Assert.StartsWith("text/plain", contentType);
     }
 }

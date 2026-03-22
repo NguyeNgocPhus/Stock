@@ -20,7 +20,7 @@ public class BookingServiceTests
         return ctx;
     }
 
-    private static BookingMetrics CreateMetrics()
+    private static IBookingMetrics CreateMetrics()
     {
         var services = new ServiceCollection();
         services.AddMetrics();

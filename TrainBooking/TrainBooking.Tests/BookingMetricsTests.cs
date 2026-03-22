@@ -37,14 +37,14 @@ public class BookingMetricsTests
     }
 
     [Fact]
-    public void RecordSeatsBooked_IncrementsCounterByAmount()
+    public void RecordSeatBooked_IncrementsSeatsCounter()
     {
         var (metrics, _, seatsCollector) = CreateSut();
 
-        metrics.RecordSeatsBooked(3, "42");
+        metrics.RecordSeatBooked("42");
 
         var measurement = Assert.Single(seatsCollector.GetMeasurementSnapshot());
-        Assert.Equal(3, measurement.Value);
+        Assert.Equal(1, measurement.Value);
         Assert.Equal("42", measurement.Tags["train.id"]);
     }
 }

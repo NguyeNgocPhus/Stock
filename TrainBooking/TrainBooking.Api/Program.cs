@@ -20,7 +20,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<IBookingService, BookingService>();
 
-builder.Services.AddSingleton<BookingMetrics>();
+builder.Services.AddSingleton<IBookingMetrics, BookingMetrics>();
 
 builder.Services.AddOpenTelemetry()
     .WithMetrics(metrics => metrics
