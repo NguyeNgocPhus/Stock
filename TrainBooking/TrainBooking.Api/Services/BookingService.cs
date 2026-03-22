@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using TrainBooking.Api.Data;
 using TrainBooking.Api.DTOs;
+using TrainBooking.Api.Metrics;
 using TrainBooking.Api.Models;
 
 namespace TrainBooking.Api.Services;
@@ -11,12 +12,14 @@ public class BookingService : IBookingService
 {
     private readonly AppDbContext _db;
     private readonly ILogger<BookingService> _logger;
+    private readonly BookingMetrics _metrics;
     private static readonly char[] Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".ToCharArray();
 
-    public BookingService(AppDbContext db, ILogger<BookingService> logger)
+    public BookingService(AppDbContext db, ILogger<BookingService> logger, BookingMetrics metrics)
     {
         _db = db;
         _logger = logger;
+        _metrics = metrics;
     }
 
     public async Task<BookingResponse> CreateBookingAsync(BookingRequest request)
@@ -62,6 +65,9 @@ public class BookingService : IBookingService
 
         _logger.LogInformation("Booking {BookingReference} created for passenger {PassengerName}",
             reference, request.PassengerName);
+
+        _metrics.RecordBookingCreated(request.TrainId.ToString());
+        _metrics.RecordSeatsBooked(1, request.TrainId.ToString());
 
         return MapToResponse(booking, train.Name, seat);
     }
